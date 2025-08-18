@@ -60,14 +60,12 @@ export default {
   methods: {
     toggleMenu() {
       this.isOpen = !this.isOpen;
-      if (this.isOpen) {
-          this.$refs.togglebtn.style = "margin-left: 170px;"
-      }else{
-          this.$refs.togglebtn.style = "margin-left: 0px;"
+      if (this.isOpen && this.$refs.togglebtn) {
+          this.$refs.togglebtn.style.marginLeft = this.isOpen ? "170px" : "0px";
       }
     },
     checkScreen() {
-      this.isMobile = window.innerWidth <= 1000 ;
+      this.isMobile = window.innerWidth <= 1000;
       if (!this.isMobile) {
         this.isOpen = false;
       }
