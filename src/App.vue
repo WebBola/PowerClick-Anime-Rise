@@ -108,9 +108,9 @@ export default {
       this.$router.push("/game");
     }
 
-    this.bgMusic = new Audio("/bg-music.m4a");
-    this.bgMusic.loop = true;
-    this.bgMusic.volume = 0.5;
+    //this.bgMusic = new Audio("/bg-music.m4a");
+    //this.bgMusic.loop = true;
+    //this.bgMusic.volume = 0.5;
 
     // this.bgMusic.play().catch(() => {
     //   document.addEventListener("click", this.startMusic, { once: true });
