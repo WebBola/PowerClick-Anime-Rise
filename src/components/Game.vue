@@ -1,5 +1,5 @@
   <template>
-    <div v-if="lvl ">
+    <div v-if="lvl">
 
       <div class="">
         <h1 class="count">{{ formattedCount }}</h1>
@@ -29,8 +29,8 @@
       </div>
 
 
-      <button :style="buttonStyle" class="button-click" @mousedown="mouseEvent" @pointerdown="handleClick">
-        <img :src="imgUrl" alt="" />
+      <button :style="buttonStyle" class="button-click" @mousedown="mouseEvent" @click="handleClick">
+        <img :src="lvl ? imgUrl : '/image/default-avatar.jfif'" alt="" />
       </button>
 
       <h1 class="name">{{ PersonName }}</h1>
@@ -139,7 +139,6 @@ export default {
 </script>
 
 <style scoped>
-
 .lvl-info {
   display: flex;
   justify-content: space-between;
@@ -330,6 +329,10 @@ export default {
   .name {
     transform: translateX(50px);
   }
+
+  .button-click:active {
+    transform: translateX(50px) scale(0.99);
+  }
 }
 
 @media (max-width: 1200px) {
@@ -339,6 +342,10 @@ export default {
   .button-click,
   .name {
     transform: translateX(50px);
+  }
+
+   .button-click:active {
+    transform: translateX(50px) scale(0.99);
   }
 }
 
@@ -350,6 +357,10 @@ export default {
   .name {
     transform: translateX(100px);
   }
+
+   .button-click:active {
+    transform: translateX(100px) scale(0.99);
+  }
 }
 
 @media (max-width: 1000px) {
@@ -359,6 +370,10 @@ export default {
   .button-click,
   .name {
     transform: translateX(0px);
+  }
+
+   .button-click:active {
+    transform: translateX(0px) scale(0.99);
   }
 }
 

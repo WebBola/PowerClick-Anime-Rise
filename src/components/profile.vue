@@ -44,15 +44,14 @@
 import { db, auth } from "../firebase";
 import { collection, onSnapshot, query, orderBy, doc } from "firebase/firestore";
 import { onAuthStateChanged, getAuth, } from "firebase/auth";
-import Ranking from "./Ranking.vue";
 
 export default {
   props: {
-    formattedCount: String,
+    formattedCount: Function,
     lvl: Number,
-    formatNumber: String,
+    formatNumber: Function,
   },
-  components: { Ranking },
+  emits: ["update-rank", "handle-click", "close-card"],
   data() {
     return {
       userData: null,

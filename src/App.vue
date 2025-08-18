@@ -33,7 +33,7 @@ export default {
     return {
       count: 0,
       tap_value: 1,
-      lvl: 1,
+      lvl: null,
       xp: 0,
       xpToLevelUp: 1000,
       showLevelUpEffect: false,
@@ -264,7 +264,7 @@ export default {
           tap_value: this.tap_value
         });
         console.log("Firebase’ga yozildi ✅");
-      }, 3000);
+      }, 2000);
 
 
     }

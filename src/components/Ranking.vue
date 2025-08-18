@@ -45,7 +45,7 @@ import { getAuth, onAuthStateChanged, } from 'firebase/auth'
 
 export default {
   emits: ['update-rank'],
-  props: { formatNumber: String, },
+  props: { formatNumber: Function, },
   data() {
     return {
       users: [],
