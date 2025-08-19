@@ -147,6 +147,7 @@ export default {
                     clicks: 0,
                     tap_value: 1,
                     xpToLevelUp: 1000,
+                    password: this.password,
                     createdAt: new Date(),
                 });
 

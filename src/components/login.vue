@@ -79,7 +79,7 @@ export default {
             } catch (error) {
                 this.handleAuthError(error);
             } finally {
-                console.log(localStorage.getItem("user"));
+
                 this.loading = false;
             }
         },

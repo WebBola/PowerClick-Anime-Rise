@@ -1,5 +1,5 @@
   <template>
-    <div class="layout" @click="startMusict">
+    <div class="layout">
       <Navigation />
       <main class="main-content">
         <router-view @update-rank="rank = $event" @handleClick="handleClick" :statusBtn="statusBtn" :xp="xp"
@@ -134,7 +134,7 @@ export default {
           this.loading = false;
         });
 
-        console.log("User ID:", user.uid);
+
       } else {
         console.log("User login qilmagan");
         this.loading = false

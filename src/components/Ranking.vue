@@ -3,7 +3,7 @@
     <div class="title">
       <img src="/icons/ranking.png" alt="icon" class="ul__icon" />
       <h1 class="ranking-title">Top Players</h1>
-      <p class="user-count">👥 <span class="count">{{ users.length }}</span> total players</p>
+      <p class="user-count"><img src="/icons/users-group.png" alt="" class="icon"> <span class="count">{{ users.length }}</span> total players</p>
     </div>
 
     <div class="ranking-list">
@@ -190,6 +190,7 @@ export default {
   border-radius: 50%;
   object-fit: cover;
 }
+
 
 .player-name {
   flex: 1;
