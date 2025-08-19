@@ -61,7 +61,9 @@ export default {
     toggleMenu() {
       this.isOpen = !this.isOpen;
       if (this.isOpen && this.$refs.togglebtn) {
-          this.$refs.togglebtn.style.marginLeft = this.isOpen ? "170px" : "0px";
+          this.$refs.togglebtn.style = `margin-left: 170px;`
+      } else{
+          this.$refs.togglebtn.style = `margin-left: 0px;`
       }
     },
     checkScreen() {
