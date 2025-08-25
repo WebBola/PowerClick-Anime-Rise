@@ -15,6 +15,9 @@
         <router-link :to="{ name: 'Profile' }">
           <li class="sidebar__link"><img class="ul__icon" src="/icons/user.png" alt=""> Profil</li>
         </router-link>
+        <router-link :to="{ name: 'Chat' }">
+          <li class="sidebar__link"><img class="ul__icon" src="/icons/chat.png" alt=""> Global Chat</li>
+        </router-link>
         <router-link :to="{ name: 'Ranking' }">
           <li class="sidebar__link"><img class="ul__icon" src="/icons/ranking.png" alt=""> Reyting</li>
         </router-link>

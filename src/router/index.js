@@ -9,6 +9,7 @@ import Shop from '@/components/shop.vue'
 import { createRouter, createWebHistory } from 'vue-router'
 import GuestPage from '@/components/GuestPage.vue'
 import Contact from '@/components/contact.vue'
+import GlobalChat from '@/components/GlobalChat.vue'
 
 const router = createRouter({
   history: createWebHistory(import.meta.env.BASE_URL),
@@ -28,6 +29,12 @@ const router = createRouter({
       path: '/profile',
       name: 'Profile',
       component: Profile,
+      meta: { requiresAuth: true } // faqat login uchun
+    },
+    {
+      path: '/chat',
+      name: 'Chat',
+      component: GlobalChat,
       meta: { requiresAuth: true } // faqat login uchun
     },
     {
