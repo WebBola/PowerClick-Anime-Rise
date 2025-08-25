@@ -23,13 +23,8 @@
       </div>
 
       <form class="input-bar" @submit.prevent="send">
-        <input
-          v-model="draft"
-          type="text"
-          placeholder="Type a message..."
-          maxlength="500"
-          @keydown.enter.exact.prevent="send"
-        />
+        <input v-model="draft" type="text" placeholder="Type a message..." maxlength="500"
+          @keydown.enter.exact.prevent="send" />
         <button type="submit" :disabled="sending || !canSend">Send</button>
       </form>
     </div>
@@ -99,20 +94,22 @@ export default {
           id: docu.id,
           text: d.text,
           uid: d.uid,
-          username: d.username || d.displayName || 'Player', // ✅ username ishlatamiz
+          username: d.username || 'Player',  // ✅ endi boshqa odamlarning ham username'i chiqadi
           avatar: d.avatar || null,
-          createdAt: d.createdAt && d.createdAt.toDate ? d.createdAt.toDate() : new Date()
+          createdAt: d.createdAt?.toDate ? d.createdAt.toDate() : new Date()
         })
       })
       this.messages = arr
       this.$nextTick(this.scrollToBottom)
 
+      // Online hisoblash
       const twoMinAgo = Date.now() - 120000
       const active = new Set(
         arr.filter(m => m.createdAt.getTime() >= twoMinAgo).map(m => m.uid)
       )
       this.onlineCount = active.size
     })
+
   },
   beforeDestroy() {
     if (this.unsub) this.unsub()
@@ -138,15 +135,15 @@ export default {
         const msg = {
           text,
           uid: user.uid,
-          username: this.userProfile?.username || user.displayName || 'Player', // ✅ endi bor
+          username: this.userProfile?.username || user.displayName || 'Player', // ✅ username saqlanadi
           avatar: user.photoURL || null,
           createdAt: serverTimestamp()
         }
 
-        // Global chat
+        // 🔥 Global chat
         await addDoc(collection(db, 'globalMessages'), msg)
 
-        // User personal messages
+        // 🔥 Foydalanuvchining shaxsiy xabarlari
         await addDoc(collection(db, 'users', user.uid, 'messages'), msg)
 
         this.draft = ''
@@ -158,6 +155,7 @@ export default {
         this.sending = false
       }
     },
+
     scrollToBottom() {
       const el = this.$refs.list
       if (!el) return
@@ -236,6 +234,7 @@ export default {
   gap: 8px;
   max-width: 75%;
 }
+
 .msg.mine {
   margin-left: auto;
   flex-direction: row-reverse;
@@ -273,6 +272,7 @@ export default {
   border: 1px solid #202636;
   flex-shrink: 0;
 }
+
 .bubble {
   padding: 10px 14px;
   border-radius: 18px;

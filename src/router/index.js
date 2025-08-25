@@ -35,7 +35,6 @@ const router = createRouter({
       path: '/chat',
       name: 'Chat',
       component: GlobalChat,
-      meta: { requiresAuth: true } // faqat login uchun
     },
     {
       path: '/ranking',
