@@ -16,7 +16,7 @@
     <div class="setting-item">
       <div class="iconTitle"><img src="/icons/volume.png" alt=""><span>Tovush</span></div>
       <label class="switch">
-        <input type="checkbox" v-model="sound" @change="saveSettings" />
+        <input type="checkbox" v-model="sound" @change="onSoundChange" />
         <span class="slider"></span>
       </label>
     </div>
@@ -75,8 +75,7 @@ export default {
     const saved = JSON.parse(localStorage.getItem("settings"));
     if (saved) {
       this.darkMode = saved.darkMode;
-      this.sound = saved.sound;
-      this.vibration = saved.vibration;
+      // this.sound = saved.sound;
     }
   },
   methods: {
@@ -102,6 +101,11 @@ export default {
     changeLanguage() {
       this.$i18n.locale = this.selectedLanguage;
       console.log("Til o'zgardi:", this.selectedLanguage);
+    },
+
+    onSoundChange() {
+      this.saveSettings();
+      this.$emit('updateSound', this.sound); // parentga yuboradi
     }
   }
 };
@@ -412,7 +416,7 @@ input:checked+.slider::before {
   }
 
   input:checked+.slider::before {
-  transform: translateX(18px);
-}
+    transform: translateX(18px);
+  }
 }
 </style>

@@ -2,11 +2,11 @@
     <div class="layout">
       <Navigation />
       <main class="main-content">
-        <router-view @update-rank="rank = $event" @handleClick="handleClick" :statusBtn="statusBtn" :xp="xp"
-          :count="count" :PersonName="PersonName" :imgUrl="imgUrl" :xpToLevelUp="xpToLevelUp"
-          :showLevelUpEffect="showLevelUpEffect" @closeCard="closeCard" :tap_value="tap_value" :lvl="lvl"
-          :formattedXp="formattedXp" :formattedXpToLevelUp="formattedXpToLevelUp" :formattedCount="formattedCount"
-          :formatNumber="formatNumber" :ranking="rank" />
+        <router-view @update-rank="rank = $event" @updateSound="handleSound" @handleClick="handleClick"
+          :statusBtn="statusBtn" :xp="xp" :count="count" :PersonName="PersonName" :imgUrl="imgUrl"
+          :xpToLevelUp="xpToLevelUp" :showLevelUpEffect="showLevelUpEffect" @closeCard="closeCard"
+          :tap_value="tap_value" :lvl="lvl" :formattedXp="formattedXp" :formattedXpToLevelUp="formattedXpToLevelUp"
+          :formattedCount="formattedCount" :formatNumber="formatNumber" :ranking="rank" />
       </main>
     </div>
     <div v-if="loading" class="loader-overlay">
@@ -19,7 +19,7 @@ import Navigation from './components/navigation.vue';
 import Profile from './components/profile.vue';
 import { useI18n } from 'vue-i18n';
 import { getAuth, onAuthStateChanged } from "firebase/auth";
-import { doc, onSnapshot, updateDoc } from "firebase/firestore";
+import { doc, getDoc, onSnapshot, updateDoc } from "firebase/firestore";
 import { db } from "@/firebase";
 
 export default {
@@ -43,6 +43,8 @@ export default {
       saveTimeout: null,
       isOnline: navigator.onLine,
       bgMusic: null,
+      musicPlayed: false,
+      isSoundOn: true,
       statusBtn: [
         { name: 'Takemichi', img: '/image/takemichi.jpg', shadow: '#ffeb3b' },
         { name: 'Chifuyu', img: '/image/chifuyu.jpg', shadow: '#90caf9' },
@@ -144,8 +146,14 @@ export default {
   },
   methods: {
 
-    startMusic() {
-      this.bgMusic.play();
+    handleSound(value) {
+      this.isSoundOn = value;
+
+      // Agar audio allaqachon mavjud bo‘lsa — darhol mute/unmute
+      if (this.audio) {
+        this.audio.muted = !this.isSoundOn;
+        console.log("Sound toggled:", this.isSoundOn ? "ON" : "OFF");
+      }
     },
 
     closeCard() {
@@ -266,6 +274,26 @@ export default {
         console.log("Firebase’ga yozildi ✅");
       }, 2000);
 
+
+      if (this.musicPlayed) return;
+
+      try {
+        const docRef = doc(db, "storage", "music");
+        const docSnap = await getDoc(docRef);
+
+        if (docSnap.exists()) {
+          const url = docSnap.data().musicUrl;
+
+          this.audio = new Audio(url);
+          this.audio.loop = true;
+          this.audio.muted = !this.isSoundOn; // boshlanishida tekshir
+          await this.audio.play();
+
+          this.musicPlayed = true;
+        }
+      } catch (err) {
+        console.error("Error fetching music URL:", err);
+      }
 
     }
 

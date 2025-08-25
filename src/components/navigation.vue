@@ -62,11 +62,14 @@ export default {
   },
   methods: {
     toggleMenu() {
-      this.isOpen = !this.isOpen;
-      if (this.isOpen && this.$refs.togglebtn) {
+      if (this.isMobile) {
+
+        this.isOpen = !this.isOpen;
+        if (this.isOpen && this.$refs.togglebtn) {
           this.$refs.togglebtn.style = `margin-left: 170px;`
-      } else{
+        } else {
           this.$refs.togglebtn.style = `margin-left: 0px;`
+        }
       }
     },
     checkScreen() {
@@ -146,19 +149,22 @@ export default {
 }
 
 .blur-card {
-  background: rgba(255, 255, 255, 0.1); /* Shaffof oq fon */
-  backdrop-filter: blur(10px);          /* Blur effekti */
-  -webkit-backdrop-filter: blur(10px);  /* Safari uchun */
+  background: rgba(255, 255, 255, 0.1);
+  /* Shaffof oq fon */
+  backdrop-filter: blur(10px);
+  /* Blur effekti */
+  -webkit-backdrop-filter: blur(10px);
+  /* Safari uchun */
   border-radius: 10px;
   border: 1px solid rgba(255, 255, 255, 0.2);
   color: white;
 }
 
 @media (max-width: 500px) {
-    .menu-btn{
-        top: 10px;
-        left: 10px;
-    }
-    
+  .menu-btn {
+    top: 10px;
+    left: 10px;
+  }
+
 }
 </style>
