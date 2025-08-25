@@ -1,6 +1,5 @@
 <template>
   <div class="df">
-
     <div class="w250"></div>
     <div class="chat-wrap">
       <div class="chat-header">
@@ -15,7 +14,7 @@
           <img v-if="m.avatar" :src="m.avatar" class="avatar" alt="" />
           <div class="bubble">
             <div class="meta">
-              <span class="name">{{ m.displayName || 'Player' }}</span>
+              <span class="name">{{ m.username || 'Player' }}</span>
               <span class="time">{{ formatTime(m.createdAt) }}</span>
             </div>
             <div class="text">{{ m.text }}</div>
@@ -24,19 +23,21 @@
       </div>
 
       <form class="input-bar" @submit.prevent="send">
-        <input v-model="draft" type="text" placeholder="Type a message..." maxlength="500"
-          @keydown.enter.exact.prevent="send" />
+        <input
+          v-model="draft"
+          type="text"
+          placeholder="Type a message..."
+          maxlength="500"
+          @keydown.enter.exact.prevent="send"
+        />
         <button type="submit" :disabled="sending || !canSend">Send</button>
       </form>
     </div>
   </div>
-
 </template>
 
-
 <script>
-// Vue 2 + Firebase v9 modular
-import { auth, db } from '@/firebase';
+import { auth, db } from '@/firebase'
 import {
   collection,
   addDoc,
@@ -44,8 +45,10 @@ import {
   query,
   orderBy,
   limit,
-  serverTimestamp
-} from 'firebase/firestore';
+  serverTimestamp,
+  doc,
+  getDoc
+} from 'firebase/firestore'
 
 export default {
   name: 'GlobalChat',
@@ -56,116 +59,121 @@ export default {
       sending: false,
       lastSentAt: 0,
       onlineCount: 0,
-    };
+      userProfile: null, // user info saqlash
+    }
   },
   computed: {
     currentUser() {
-      return auth.currentUser || null;
+      return auth.currentUser || null
     },
     currentUid() {
-      return this.currentUser ? this.currentUser.uid : null;
+      return this.currentUser ? this.currentUser.uid : null
     },
     canSend() {
-      return this.draft.trim().length > 0 && !!this.currentUid;
+      return this.draft.trim().length > 0 && !!this.currentUid
     },
     onlineTitle() {
-      return 'Approximate number of active users in the last 2 minutes';
+      return 'Approximate number of active users in the last 2 minutes'
     }
   },
-  mounted() {
+  async mounted() {
+    // 🔥 user profile-ni olish (username db dan)
+    if (this.currentUid) {
+      const userDoc = await getDoc(doc(db, 'users', this.currentUid))
+      if (userDoc.exists()) {
+        this.userProfile = userDoc.data()
+      }
+    }
+
     const q = query(
       collection(db, 'globalMessages'),
       orderBy('createdAt', 'asc'),
       limit(200)
-    );
+    )
 
     this.unsub = onSnapshot(q, (snap) => {
-      const arr = [];
-      snap.forEach((doc) => {
-        const d = doc.data();
+      const arr = []
+      snap.forEach((docu) => {
+        const d = docu.data()
         arr.push({
-          id: doc.id,
+          id: docu.id,
           text: d.text,
           uid: d.uid,
-          displayName: d.displayName,
+          username: d.username || d.displayName || 'Player', // ✅ username ishlatamiz
           avatar: d.avatar || null,
           createdAt: d.createdAt && d.createdAt.toDate ? d.createdAt.toDate() : new Date()
-        });
-      });
-      this.messages = arr;
-      this.$nextTick(this.scrollToBottom);
+        })
+      })
+      this.messages = arr
+      this.$nextTick(this.scrollToBottom)
 
-      const twoMinAgo = Date.now() - 120000;
+      const twoMinAgo = Date.now() - 120000
       const active = new Set(
-        arr
-          .filter(m => m.createdAt.getTime() >= twoMinAgo)
-          .map(m => m.uid)
-      );
-      this.onlineCount = active.size;
-    });
+        arr.filter(m => m.createdAt.getTime() >= twoMinAgo).map(m => m.uid)
+      )
+      this.onlineCount = active.size
+    })
   },
   beforeDestroy() {
-    if (this.unsub) this.unsub();
+    if (this.unsub) this.unsub()
   },
   methods: {
     async send() {
-      if (!this.canSend || this.sending) return;
+      if (!this.canSend || this.sending) return
 
-      const nowMs = Date.now();
-      if (nowMs - this.lastSentAt < 2000) return;
+      const nowMs = Date.now()
+      if (nowMs - this.lastSentAt < 2000) return
 
-      const text = this.draft.trim().replace(/\s+/g, ' ').slice(0, 500);
-      if (!text) return;
+      const text = this.draft.trim().replace(/\s+/g, ' ').slice(0, 500)
+      if (!text) return
 
-      const user = this.currentUser;
+      const user = this.currentUser
       if (!user) {
-        alert('Please sign in to chat.');
-        return;
+        alert('Please sign in to chat.')
+        return
       }
 
-      this.sending = true;
+      this.sending = true
       try {
         const msg = {
           text,
           uid: user.uid,
-          displayName: user.displayName || 'Player',
+          username: this.userProfile?.username || user.displayName || 'Player', // ✅ endi bor
           avatar: user.photoURL || null,
           createdAt: serverTimestamp()
-        };
+        }
 
-        // 1) global chatga yozish
-        await addDoc(collection(db, 'globalMessages'), msg);
+        // Global chat
+        await addDoc(collection(db, 'globalMessages'), msg)
 
-        // 2) userning shaxsiy messages kolleksiyasiga yozish
-        await addDoc(collection(db, 'users', user.uid, 'messages'), msg);
+        // User personal messages
+        await addDoc(collection(db, 'users', user.uid, 'messages'), msg)
 
-        this.draft = '';
-        this.lastSentAt = nowMs;
-        this.$nextTick(this.scrollToBottom);
+        this.draft = ''
+        this.lastSentAt = nowMs
+        this.$nextTick(this.scrollToBottom)
       } catch (e) {
-        console.error('send error', e);
+        console.error('send error', e)
       } finally {
-        this.sending = false;
+        this.sending = false
       }
     },
     scrollToBottom() {
-      const el = this.$refs.list;
-      if (!el) return;
-      el.scrollTop = el.scrollHeight;
+      const el = this.$refs.list
+      if (!el) return
+      el.scrollTop = el.scrollHeight
     },
     formatTime(d) {
       try {
-        const date = d instanceof Date ? d : new Date(d);
-        return date.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+        const date = d instanceof Date ? d : new Date(d)
+        return date.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
       } catch {
-        return '';
+        return ''
       }
     }
   }
-};
+}
 </script>
-
-
 <style scoped>
 .chat-wrap {
   max-width: 1250px;
@@ -214,24 +222,23 @@ export default {
   overflow-y: auto;
   display: flex;
   flex-direction: column;
-  gap: 10px;
-  padding-right: 4px;
+  gap: 12px;
+  padding: 12px 6px;
 }
 
-.df{
+.df {
   display: flex;
 }
 
-
 .msg {
-  display: grid;
-  grid-template-columns: 36px 1fr;
+  display: flex;
+  align-items: flex-end;
   gap: 8px;
-  align-items: start;
+  max-width: 75%;
 }
-
 .msg.mine {
-  grid-template-columns: 1fr 36px;
+  margin-left: auto;
+  flex-direction: row-reverse;
 }
 
 .msg.mine .avatar {
@@ -239,9 +246,23 @@ export default {
 }
 
 .msg.mine .bubble {
-  order: 1;
-  background: #1b2430;
-  border: 1px dashed #8b5cf6;
+  background: linear-gradient(135deg, #7c3aed, #8b5cf6);
+  border: none;
+  color: #fff;
+  border-bottom-right-radius: 6px;
+  border-bottom-left-radius: 18px;
+  border-top-left-radius: 18px;
+  box-shadow: 0 2px 6px rgba(139, 92, 246, 0.25);
+}
+
+
+.msg:not(.mine) .bubble {
+  background: #1a1f2b;
+  border: 1px solid #252b39;
+  border-bottom-left-radius: 6px;
+  border-bottom-right-radius: 18px;
+  border-top-right-radius: 18px;
+  color: #e6eaf3;
 }
 
 .avatar {
@@ -250,22 +271,23 @@ export default {
   border-radius: 50%;
   object-fit: cover;
   border: 1px solid #202636;
+  flex-shrink: 0;
 }
-
 .bubble {
-  background: #141823;
-  border: 1px solid #202636;
-  border-radius: 14px;
-  padding: 8px 10px;
+  padding: 10px 14px;
+  border-radius: 18px;
+  font-size: 14px;
+  word-break: break-word;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
 }
 
 .meta {
   display: flex;
   gap: 8px;
-  align-items: center;
-  font-size: 12px;
-  color: #aab2c5;
-  margin-bottom: 2px;
+  font-size: 11px;
+  opacity: 0.8;
 }
 
 .name {
@@ -274,7 +296,7 @@ export default {
 }
 
 .time {
-  opacity: .8;
+  opacity: 0.8;
 }
 
 .text {
@@ -314,7 +336,7 @@ export default {
 }
 
 .input-bar button[disabled] {
-  opacity: .6;
+  opacity: 0.6;
   cursor: not-allowed;
 }
 
@@ -324,17 +346,16 @@ export default {
   width: 330px;
 }
 
-
 @media (max-width: 1000px) {
-  .w250{
+  .w250 {
     display: none;
   }
 
-  .chat-wrap{
+  .chat-wrap {
     padding-top: 50px;
   }
 
-  .title{
+  .title {
     padding-left: 60px;
   }
 }
