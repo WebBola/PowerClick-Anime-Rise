@@ -1,178 +1,179 @@
-<template>
-  <div class="df">
-    <div class="w250"></div>
-    <div class="chat-wrap">
-      <div class="chat-header">
-        <div class="title">Global Chat</div>
-        <div class="online" :title="onlineTitle">
-          <span class="dot"></span> {{ onlineCount }} online
-        </div>
-      </div>
-
-      <div class="messages" ref="list">
-        <div v-for="m in messages" :key="m.id" class="msg" :class="{ mine: m.uid === currentUid }">
-          <img v-if="m.avatar" :src="m.avatar" class="avatar" alt="" />
-          <div class="bubble">
-            <div class="meta">
-              <span class="name">{{ m.username || 'Player' }}</span>
-              <span class="time">{{ formatTime(m.createdAt) }}</span>
-            </div>
-            <div class="text">{{ m.text }}</div>
+  <template>
+    <div class="df">
+      <div class="w250"></div>
+      <div class="chat-wrap">
+        <div class="chat-header">
+          <div class="title">Global Chat</div>
+          <div class="online" :title="onlineTitle">
+            <span class="dot"></span> {{ onlineCount }} online
           </div>
         </div>
+
+        <div class="messages" ref="list">
+          <div v-for="m in messages" :key="m.id" class="msg" :class="{ mine: m.uid === currentUid }">
+            <img v-if="m.avatar" :src="m.avatar" class="avatar" alt="" />
+            <div class="bubble">
+              <div class="meta">
+                <span class="name">{{ m.username || 'Player' }}</span>
+                <span class="time">{{ formatTime(m.createdAt) }}</span>
+              </div>
+              <div class="text">{{ m.text }}</div>
+            </div>
+          </div>
+        </div>
+
+        <form class="input-bar" @submit.prevent="send">
+          <input v-model="draft" type="text" placeholder="Type a message..." maxlength="500"
+            @keydown.enter.exact.prevent="send" />
+          <button type="submit" :disabled="sending || !canSend">Send</button>
+        </form>
       </div>
-
-      <form class="input-bar" @submit.prevent="send">
-        <input v-model="draft" type="text" placeholder="Type a message..." maxlength="500"
-          @keydown.enter.exact.prevent="send" />
-        <button type="submit" :disabled="sending || !canSend">Send</button>
-      </form>
     </div>
-  </div>
-</template>
+  </template>
 
-<script>
-import { auth, db } from '@/firebase'
-import {
-  collection,
-  addDoc,
-  onSnapshot,
-  query,
-  orderBy,
-  limit,
-  serverTimestamp,
-  doc,
-  getDoc
-} from 'firebase/firestore'
+  <script>
+  import { auth, db } from '@/firebase'
+  import {
+    collection,
+    addDoc,
+    onSnapshot,
+    query,
+    orderBy,
+    limit,
+    serverTimestamp,
+    doc,
+    getDoc
+  } from 'firebase/firestore'
 
-export default {
-  name: 'GlobalChat',
-  data() {
-    return {
-      messages: [],
-      draft: '',
-      sending: false,
-      lastSentAt: 0,
-      onlineCount: 0,
-      userProfile: null, // user info saqlash
-    }
-  },
-  computed: {
-    currentUser() {
-      return auth.currentUser || null
-    },
-    currentUid() {
-      return this.currentUser ? this.currentUser.uid : null
-    },
-    canSend() {
-      return this.draft.trim().length > 0 && !!this.currentUid
-    },
-    onlineTitle() {
-      return 'Approximate number of active users in the last 2 minutes'
-    }
-  },
-  async mounted() {
-    // 🔥 user profile-ni olish (username db dan)
-    if (this.currentUid) {
-      const userDoc = await getDoc(doc(db, 'users', this.currentUid))
-      if (userDoc.exists()) {
-        this.userProfile = userDoc.data()
+  export default {
+    name: 'GlobalChat',
+    data() {
+      return {
+        messages: [],
+        draft: '',
+        sending: false,
+        lastSentAt: 0,
+        onlineCount: 0,
+        userProfile: null, // user info saqlash
       }
-    }
+    },
+    computed: {
+      currentUser() {
+        return auth.currentUser || null
+      },
+      currentUid() {
+        return this.currentUser ? this.currentUser.uid : null
+      },
+      canSend() {
+        return this.draft.trim().length > 0 && !!this.currentUid
+      },
+      onlineTitle() {
+        return 'Approximate number of active users in the last 2 minutes'
+      }
+    },
+    async mounted() {
+      // 🔥 user profile-ni olish (username db dan)
+      if (this.currentUid) {
+        const userDoc = await getDoc(doc(db, 'users', this.currentUid))
+        if (userDoc.exists()) {
+          this.userProfile = userDoc.data()
+        }
+      }
 
-    const q = query(
-      collection(db, 'globalMessages'),
-      orderBy('createdAt', 'asc'),
-      limit(200)
-    )
-
-    this.unsub = onSnapshot(q, (snap) => {
-      const arr = []
-      snap.forEach((docu) => {
-        const d = docu.data()
-        arr.push({
-          id: docu.id,
-          text: d.text,
-          uid: d.uid,
-          username: d.username || 'Player',  // ✅ endi boshqa odamlarning ham username'i chiqadi
-          avatar: d.avatar || null,
-          createdAt: d.createdAt?.toDate ? d.createdAt.toDate() : new Date()
-        })
-      })
-      this.messages = arr
-      this.$nextTick(this.scrollToBottom)
-
-      // Online hisoblash
-      const twoMinAgo = Date.now() - 120000
-      const active = new Set(
-        arr.filter(m => m.createdAt.getTime() >= twoMinAgo).map(m => m.uid)
+      const q = query(
+        collection(db, 'globalMessages'),
+        orderBy('createdAt', 'asc'),
+        limit(200)
       )
-      this.onlineCount = active.size
-    })
 
-  },
-  beforeDestroy() {
-    if (this.unsub) this.unsub()
-  },
-  methods: {
-    async send() {
-      if (!this.canSend || this.sending) return
+      this.unsub = onSnapshot(q, (snap) => {
+        const arr = []
+        snap.forEach((docu) => {
+          const d = docu.data()
+          arr.push({
+            id: docu.id,
+            text: d.text,
+            uid: d.uid,
+            username: d.username || 'Player',  // ✅ endi boshqa odamlarning ham username'i chiqadi
+            avatar: d.avatar || null,
+            createdAt: d.createdAt?.toDate ? d.createdAt.toDate() : new Date()
+          })
+        })
+        this.messages = arr
+        this.$nextTick(this.scrollToBottom)
 
-      const nowMs = Date.now()
-      if (nowMs - this.lastSentAt < 2000) return
+        // Online hisoblash
+        const twoMinAgo = Date.now() - 120000
+        const active = new Set(
+          arr.filter(m => m.createdAt.getTime() >= twoMinAgo).map(m => m.uid)
+        )
+        this.onlineCount = active.size
+      })
 
-      const text = this.draft.trim().replace(/\s+/g, ' ').slice(0, 500)
-      if (!text) return
+    },
+    beforeDestroy() {
+      if (this.unsub) this.unsub()
+    },
+    methods: {
+      async send() {
+        if (!this.canSend || this.sending) return
 
-      const user = this.currentUser
-      if (!user) {
-        alert('Please sign in to chat.')
-        return
-      }
+        const nowMs = Date.now()
+        if (nowMs - this.lastSentAt < 2000) return
 
-      this.sending = true
-      try {
-        const msg = {
-          text,
-          uid: user.uid,
-          username: this.userProfile?.username || user.displayName || 'Player', // ✅ username saqlanadi
-          avatar: user.photoURL || null,
-          createdAt: serverTimestamp()
+        const text = this.draft.trim().replace(/\s+/g, ' ').slice(0, 500)
+        if (!text) return
+
+        const user = this.currentUser
+        if (!user) {
+          alert('Please sign in to chat.')
+          return
         }
 
-        // 🔥 Global chat
-        await addDoc(collection(db, 'globalMessages'), msg)
+        this.sending = true
+        try {
+          const msg = {
+            text,
+            uid: user.uid,
+            username: this.userProfile?.username || user.displayName || 'Player', // ✅ username saqlanadi
+            avatar: user.photoURL || null,
+            createdAt: serverTimestamp()
+          }
 
-        // 🔥 Foydalanuvchining shaxsiy xabarlari
-        await addDoc(collection(db, 'users', user.uid, 'messages'), msg)
+          // 🔥 Global chat
+          await addDoc(collection(db, 'globalMessages'), msg)
 
-        this.draft = ''
-        this.lastSentAt = nowMs
-        this.$nextTick(this.scrollToBottom)
-      } catch (e) {
-        console.error('send error', e)
-      } finally {
-        this.sending = false
-      }
-    },
+          // 🔥 Foydalanuvchining shaxsiy xabarlari
+          await addDoc(collection(db, 'users', user.uid, 'messages'), msg)
 
-    scrollToBottom() {
-      const el = this.$refs.list
-      if (!el) return
-      el.scrollTop = el.scrollHeight
-    },
-    formatTime(d) {
-      try {
-        const date = d instanceof Date ? d : new Date(d)
-        return date.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
-      } catch {
-        return ''
+          this.draft = ''
+          this.lastSentAt = nowMs
+          this.$nextTick(this.scrollToBottom)
+        } catch (e) {
+          console.error('send error', e)
+        } finally {
+          this.sending = false
+        }
+      },
+
+      scrollToBottom() {
+        const el = this.$refs.list
+        if (!el) return
+        el.scrollTop = el.scrollHeight
+      },
+      formatTime(d) {
+        try {
+          const date = d instanceof Date ? d : new Date(d)
+          return date.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
+        } catch {
+          return ''
+        }
       }
     }
   }
-}
-</script>
-<style scoped>
+  </script>
+  <style scoped>
+  /* 🔥 Chat umumiy */
 .chat-wrap {
   max-width: 1250px;
   width: 100%;
@@ -187,8 +188,10 @@ export default {
   border-radius: 16px;
   padding: 12px;
   overflow: auto;
+  font-family: 'Inter', 'Poppins', sans-serif;
 }
 
+/* Header */
 .chat-header {
   display: flex;
   align-items: center;
@@ -216,6 +219,7 @@ export default {
   background: #21c55d;
 }
 
+/* Messages */
 .messages {
   overflow-y: auto;
   display: flex;
@@ -224,6 +228,7 @@ export default {
   padding: 12px 6px;
 }
 
+/* Message wrappers */
 .df {
   display: flex;
 }
@@ -233,6 +238,7 @@ export default {
   align-items: flex-end;
   gap: 8px;
   max-width: 75%;
+  animation: fadeInUp 0.25s ease; /* 🔥 animatsiya */
 }
 
 .msg.mine {
@@ -244,17 +250,18 @@ export default {
   order: 2;
 }
 
+/* Sizniki (mine) bubble – YUMSHOQ violet gradient */
 .msg.mine .bubble {
-  background: linear-gradient(135deg, #7c3aed, #8b5cf6);
+  background: linear-gradient(135deg, #7c3aed, #6d28d9); /* avvalgisiga yaqin, lekin yumshoqroq */
   border: none;
   color: #fff;
   border-bottom-right-radius: 6px;
   border-bottom-left-radius: 18px;
   border-top-left-radius: 18px;
-  box-shadow: 0 2px 6px rgba(139, 92, 246, 0.25);
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.15); /* yumshoqroq soyani qildim */
 }
 
-
+/* Boshqalar (not mine) bubble */
 .msg:not(.mine) .bubble {
   background: #1a1f2b;
   border: 1px solid #252b39;
@@ -264,6 +271,7 @@ export default {
   color: #e6eaf3;
 }
 
+/* Avatar */
 .avatar {
   width: 36px;
   height: 36px;
@@ -273,6 +281,7 @@ export default {
   flex-shrink: 0;
 }
 
+/* Bubble umumiy */
 .bubble {
   padding: 10px 14px;
   border-radius: 18px;
@@ -281,8 +290,11 @@ export default {
   display: flex;
   flex-direction: column;
   gap: 4px;
+  opacity: 0;
+  animation: bubblePop 0.25s ease forwards; /* 🔥 yozilganda chiqish animatsiyasi */
 }
 
+/* Meta */
 .meta {
   display: flex;
   gap: 8px;
@@ -306,6 +318,7 @@ export default {
   font-size: 14px;
 }
 
+/* Input bar */
 .input-bar {
   display: grid;
   grid-template-columns: 1fr auto;
@@ -319,20 +332,29 @@ export default {
   border-radius: 12px;
   padding: 10px 12px;
   outline: none;
+  font-family: 'Inter', 'Poppins', sans-serif;
 }
 
 .input-bar input:focus {
-  border-color: #8b5cf6;
+  border-color: #6366f1;
 }
 
+/* Send button */
 .input-bar button {
   padding: 10px 14px;
-  background: #8b5cf6;
-  color: #0e0f13;
+  background: #4f46e5;
+  color: #fff;
   border: none;
   border-radius: 12px;
-  font-weight: 700;
+  font-weight: 600;
   cursor: pointer;
+  transition: background 0.2s ease, transform 0.15s ease;
+  font-family: 'Inter', 'Poppins', sans-serif;
+}
+
+.input-bar button:hover {
+  background: #6366f1;
+  transform: scale(1.05); /* 🔥 hover animatsiya */
 }
 
 .input-bar button[disabled] {
@@ -340,6 +362,7 @@ export default {
   cursor: not-allowed;
 }
 
+/* Responsive */
 .w250 {
   float: left;
   display: block;
@@ -359,4 +382,16 @@ export default {
     padding-left: 60px;
   }
 }
-</style>
+
+/* 🔥 Animatsiyalar */
+@keyframes fadeInUp {
+  from {opacity: 0; transform: translateY(10px);}
+  to {opacity: 1; transform: translateY(0);}
+}
+
+@keyframes bubblePop {
+  0% {opacity: 0; transform: scale(0.9);}
+  100% {opacity: 1; transform: scale(1);}
+}
+
+  </style>
